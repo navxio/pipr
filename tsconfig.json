@@ -3,6 +3,7 @@
     "composite": true,
     "baseUrl": ".",
     "paths": {
+      "@shared/*": ["packages/shared/src/*"],
       "@shared": ["packages/shared/src"]
     },
     "strict": true,
