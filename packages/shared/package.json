@@ -7,9 +7,6 @@
   "scripts": {
     "build": "tsc -b ."
   },
-  "devDependencies": {
-    "typescript": "^5.0.0"
-  },
   "keywords": [],
   "author": "Navdeep Saini",
   "license": "GPLv3",

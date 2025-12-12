@@ -20,5 +20,8 @@
   "packageManager": "pnpm@10.23.0",
   "volta": {
     "node": "24.11.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
   }
 }

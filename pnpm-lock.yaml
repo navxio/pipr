@@ -6,7 +6,11 @@ settings:
 
 importers:
 
-  .: {}
+  .:
+    devDependencies:
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   apps/api:
     dependencies:
@@ -75,11 +79,7 @@ importers:
         specifier: ^7.2.4
         version: 7.2.7(@types/node@24.10.1)(jiti@2.6.1)
 
-  packages/shared:
-    devDependencies:
-      typescript:
-        specifier: ^5.0.0
-        version: 5.9.3
+  packages/shared: {}
 
 packages:
 
