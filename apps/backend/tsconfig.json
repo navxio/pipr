@@ -3,7 +3,8 @@
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "src",
-    "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo"
+    "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo",
+    "ignoreDeprecations": "6.0"
   },
   "include": ["src", "prisma"]
 }
