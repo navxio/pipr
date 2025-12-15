@@ -1,0 +1,18 @@
+version: "3.9"
+
+services:
+  db:
+    image: ankane/pgvector:latest
+    container_name: pipr_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: pipr
+      POSTGRES_PASSWORD: pipr
+      POSTGRES_DB: pipr_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
