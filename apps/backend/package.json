@@ -24,7 +24,6 @@
     "zod": "^4.1.13"
   },
   "devDependencies": {
-    "@types/node": "^24.10.1",
     "@types/pg": "^8.16.0",
     "prisma": "^7.1.0"
   }
