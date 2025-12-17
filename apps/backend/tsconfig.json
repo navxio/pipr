@@ -3,6 +3,8 @@
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "src",
+    "module": "EsNext",
+    "moduleResolution": "NodeNext",
     "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo"
   },
   "include": ["src", "prisma"],
