@@ -1,14 +1,12 @@
+// src/trpc/router.ts
 import { initTRPC } from "@trpc/server";
-import { z } from "zod";
-import { createContext } from "./context";
+import { plannerRouter } from "./routers/planner";
+import type { Context } from "./context";
 
-const t = initTRPC.context<ReturnType<typeof createContext>>().create();
+const t = initTRPC.context<Context>().create();
 
 export const appRouter = t.router({
-  hello: t.procedure
-    .input(z.object({ name: z.string().optional() }).optional())
-    .query(({ input }) => ({ hello: `hi ${input?.name ?? "world"}` })),
-  users: t.procedure.query(async ({ ctx }) => ctx.prisma.user.findMany()),
+  planner: plannerRouter,
 });
 
 export type AppRouter = typeof appRouter;
