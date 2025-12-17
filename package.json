@@ -5,7 +5,20 @@
   "description": "An experimental project manager powered by LLMs",
   "main": "index.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build:shared": "pnpm --filter ./packages/shared run build",
+    "build:api-types": "pnpm --filter ./packages/api-types run build",
+    "build:backend": "pnpm --filter ./apps/backend run build",
+    "build:web": "pnpm --filter ./apps/web run build",
+    "build": "pnpm run build:shared && pnpm run build:api-types && pnpm run build:backend && pnpm run build:web",
+    "dev:backend": "pnpm --filter ./apps/backend run dev",
+    "dev:web": "pnpm --filter ./apps/web run dev",
+    "dev": "pnpm run build:shared && pnpm run build:api-types && concurrently \"pnpm run dev:backend\" \"pnpm run dev:web\"",
+    "db:up": "docker compose -f apps/backend/docker-compose.yml up -d",
+    "db:down": "docker compose -f apps/backend/docker-compose.yml down",
+    "prisma:migrate": "pnpm --filter ./apps/backend run prisma:migrate",
+    "prisma:generate": "pnpm --filter ./apps/backend run prisma:generate",
+    "clean": "pnpm -r exec rm -rf dist .turbo node_modules/.cache",
+    "typecheck": "tsc -b"
   },
   "keywords": [
     "llm",
@@ -23,6 +36,7 @@
   },
   "devDependencies": {
     "@types/node": "^24.10.1",
+    "concurrently": "^9.2.1",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.9.3"
   }
