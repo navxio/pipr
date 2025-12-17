@@ -5,6 +5,7 @@
     "rootDir": "src",
     "declaration": true,
     "composite": true,
+    "declarationMap": true,
     "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo"
   },
   "include": ["src"]

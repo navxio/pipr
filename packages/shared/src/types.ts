@@ -1,5 +1,5 @@
 // packages/shared/src/types.ts
-export type TaskSuggestion = {
+export type TaskSuggestionType = {
   id?: string; // optional local id from agent
   title: string;
   description?: string;
@@ -9,11 +9,11 @@ export type TaskSuggestion = {
 };
 
 export type AgentPlanResponse = {
-  tasks: TaskSuggestion[];
+  tasks: TaskSuggestionType[];
   agentRunId?: string;
 };
 
 export type AcceptTasksRequest = {
   projectId?: string | null;
-  tasks: TaskSuggestion[];
+  tasks: TaskSuggestionType[];
 };
