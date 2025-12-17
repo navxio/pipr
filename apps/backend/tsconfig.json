@@ -6,5 +6,5 @@
     "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo"
   },
   "include": ["src", "prisma"],
-  "references": [{ "path": "../../packages/shared" }]
+  "references": [{ "path": "../../packages/domain" }]
 }

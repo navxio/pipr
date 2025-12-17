@@ -3,10 +3,10 @@
     "composite": true,
     "baseUrl": ".",
     "paths": {
-      "@shared/*": ["packages/shared/src/*"],
-      "@shared": ["packages/shared/src"],
-      "@api-types": ["packages/api-types/dist/src"],
-      "@api-types/*": ["packages/api-types/dist/src/*"]
+      "@domain/*": ["packages/domain/src/*"],
+      "@domain": ["packages/domain/src"],
+      "@api": ["packages/api/dist/src"],
+      "@api/*": ["packages/api/dist/src/*"]
     },
     "strict": true,
     "target": "es2023",

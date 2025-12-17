@@ -104,9 +104,9 @@ importers:
         specifier: ^7.2.4
         version: 7.2.7(@types/node@24.10.1)(jiti@2.6.1)
 
-  packages/api-types: {}
+  packages/api: {}
 
-  packages/shared:
+  packages/domain:
     dependencies:
       zod:
         specifier: ^4.1.13

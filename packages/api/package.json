@@ -1,5 +1,5 @@
 {
-  "name": "api-types",
+  "name": "api",
   "private": true,
   "version": "0.0.0",
   "types": "dist/index.d.ts",

@@ -12,3 +12,14 @@ export const TaskSuggestion = z.object({
   estimate: z.number().optional(),
   provenance: z.array(z.string()).optional(),
 });
+
+export const PlanResponse = z.object({
+  agentRunId: z.string(),
+  tasks: z.array(TaskSuggestion),
+});
+
+export const AcceptInput = z.object({
+  agentRunId: z.string(),
+  projectId: z.string().optional(),
+  tasks: z.array(TaskSuggestion),
+});

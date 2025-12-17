@@ -4,7 +4,7 @@
   "references": [
     { "path": "./tsconfig.app.json" },
     { "path": "./tsconfig.node.json" },
-    { "path": "../../packages/shared" },
-    { "path": "../../packages/api-types" }
+    { "path": "../../packages/domain" },
+    { "path": "../../packages/api" }
   ]
 }
