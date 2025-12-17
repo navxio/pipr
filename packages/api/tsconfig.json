@@ -4,8 +4,15 @@
     "composite": true,
     "declaration": true,
     "emitDeclarationOnly": true,
+
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+
+    "rootDir": "src",
     "outDir": "dist",
     "skipLibCheck": true
   },
+  "include": ["src"],
+  "exclude": ["dist"],
   "references": [{ "path": "../../apps/backend" }]
 }

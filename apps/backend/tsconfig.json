@@ -3,7 +3,8 @@
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "src",
-    "module": "EsNext",
+    "target": "es2023",
+    "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo"
   },
