@@ -4,9 +4,9 @@
     "outDir": "dist",
     "rootDir": "src",
     "declaration": true,
+    "emitDeclarationOnly": true,
     "composite": true,
-    "declarationMap": true,
-    "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo"
+    "declarationMap": true
   },
   "include": ["src"],
   "exclude": ["dist"]

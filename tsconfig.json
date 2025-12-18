@@ -3,10 +3,10 @@
     "composite": true,
     "baseUrl": ".",
     "paths": {
-      "@pipr/domain/*": ["packages/domain/src/*"],
-      "@pipr/domain": ["packages/domain/src"],
-      "@pipr/api": ["packages/api/dist/src"],
-      "@pipr/api/*": ["packages/api/dist/src/*"]
+      "@pipr/domain/*": ["packages/domain/dist/*"],
+      "@pipr/domain": ["packages/domain/dist"],
+      "@pipr/api": ["packages/api/dist"],
+      "@pipr/api/*": ["packages/api/dist/*"]
     },
     "strict": true,
     "target": "es2023",
