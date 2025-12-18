@@ -12,3 +12,33 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+model Project {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+
+  tasks Task[]
+}
+
+model Task {
+  id          String   @id @default(cuid())
+  projectId   String
+  title       String
+  description String?
+  estimate    Int?
+  status      String   @default("todo")
+  createdAt   DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id])
+}
+
+model AgentRun {
+  id          String    @id @default(cuid())
+  agentName   String
+  inputJson   Json
+  outputJson  Json?
+  status      String    @default("completed")
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+}
