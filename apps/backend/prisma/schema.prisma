@@ -38,6 +38,7 @@ model AgentRun {
   agentName   String
   inputJson   Json
   outputJson  Json?
+  rawOutput   String?
   status      String    @default("completed")
   createdAt   DateTime  @default(now())
   completedAt DateTime?
