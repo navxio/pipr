@@ -1,33 +1,14 @@
 // apps/frontend/src/pages/Planner.tsx
-import React, { useState } from "react";
-import type { AgentPlanResponse, TaskSuggestion } from "@shared/types";
-
-async function apiPlan(goal: string) {
-  const res = await fetch("/api/plan", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ goal }),
-  });
-  if (!res.ok) throw new Error("plan failed: " + (await res.text()));
-  return (await res.json()) as AgentPlanResponse;
-}
-
-async function apiAccept(projectId: string | null, tasks: TaskSuggestion[]) {
-  const res = await fetch("/api/accept", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ projectId, tasks }),
-  });
-  if (!res.ok) throw new Error("accept failed: " + (await res.text()));
-  return res.json();
-}
+import { useState } from "react";
+import { trpc } from "../trpc";
+import type { TaskSuggestionType } from "@pipr/domain/types";
 
 function TaskCard({
   task,
   onChange,
 }: {
-  task: TaskSuggestion;
-  onChange?: (t: TaskSuggestion) => void;
+  task: TaskSuggestionType;
+  onChange?: (t: TaskSuggestionType) => void;
 }) {
   return (
     <div
@@ -44,7 +25,7 @@ function TaskCard({
         style={{ fontSize: 16, width: "100%", marginBottom: 6 }}
       />
       <textarea
-        value={task.description}
+        value={task.description ?? ""}
         onChange={(e) => onChange?.({ ...task, description: e.target.value })}
         rows={3}
         style={{ width: "100%", marginBottom: 6 }}
@@ -74,15 +55,26 @@ function TaskCard({
 
 export default function PlannerPage() {
   const [goal, setGoal] = useState("");
-  const [tasks, setTasks] = useState<TaskSuggestion[] | null>(null);
+  const [tasks, setTasks] = useState<TaskSuggestionType[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [projectId, setProjectId] = useState<string | null>(null);
+  const [agentRunId, setAgentRunId] = useState<string | null>(null);
 
   const handlePlan = async () => {
     setLoading(true);
     try {
-      const json = await apiPlan(goal);
-      setTasks(json.tasks.map((t, i) => ({ id: `s-${i}`, ...t })));
+      const result = await trpc.planner.plan.mutate({
+        goal,
+        projectId: projectId ?? undefined,
+      });
+
+      setAgentRunId(result.agentRunId);
+      setTasks(
+        result.tasks.map((t, i) => ({
+          id: `s-${i}`,
+          ...t,
+        })),
+      );
     } catch (err) {
       alert(String(err));
     } finally {
@@ -91,19 +83,23 @@ export default function PlannerPage() {
   };
 
   const handleAccept = async () => {
-    if (!tasks) return;
+    if (!tasks || !agentRunId) return;
+
     setLoading(true);
     try {
-      const res = await apiAccept(projectId, tasks);
-      setProjectId(res.projectId);
-      alert(
-        "Created " +
-          (res.created?.length ?? 0) +
-          " tasks. Project: " +
-          res.projectId,
-      );
+      const result = await trpc.planner.accept.mutate({
+        agentRunId,
+        projectId: projectId ?? undefined,
+        tasks,
+      });
+
+      setProjectId(result.projectId);
+      alert("Tasks created for project: " + result.projectId);
+
+      // reset UI
       setTasks(null);
       setGoal("");
+      setAgentRunId(null);
     } catch (err) {
       alert(String(err));
     } finally {
@@ -114,6 +110,7 @@ export default function PlannerPage() {
   return (
     <div style={{ padding: 24, maxWidth: 900, margin: "0 auto" }}>
       <h1>pipr — Planner (prototype)</h1>
+
       <div style={{ marginBottom: 12 }}>
         <label style={{ display: "block", marginBottom: 6 }}>
           Project ID (optional)
@@ -132,16 +129,17 @@ export default function PlannerPage() {
         rows={5}
         style={{ width: "100%", marginBottom: 12 }}
       />
+
       <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
         <button onClick={handlePlan} disabled={!goal || loading}>
           {loading ? "Planning…" : "Plan"}
         </button>
         <button
-          onClick={() => {
+          onClick={() =>
             setGoal(
               "Create onboarding flow\n- email signup\n- welcome email\n- analytics tracking",
-            );
-          }}
+            )
+          }
         >
           Try sample goal
         </button>
@@ -150,18 +148,18 @@ export default function PlannerPage() {
       {tasks && (
         <>
           <h2>Agent Suggestions</h2>
-          {tasks.map((t, idx) => (
+          {tasks.map((t) => (
             <TaskCard
-              key={t.id ?? idx}
+              key={t.id}
               task={t}
               onChange={(updated) =>
-                setTasks(
-                  (prev) =>
-                    prev?.map((x) => (x.id === t.id ? updated : x)) ?? null,
+                setTasks((prev) =>
+                  prev ? prev.map((x) => (x.id === t.id ? updated : x)) : null,
                 )
               }
             />
           ))}
+
           <div style={{ display: "flex", gap: 8 }}>
             <button onClick={handleAccept} disabled={loading}>
               {loading ? "Accepting…" : "Accept all"}
