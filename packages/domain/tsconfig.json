@@ -4,9 +4,9 @@
     "outDir": "dist",
     "rootDir": "src",
     "declaration": true,
-    "emitDeclarationOnly": true,
     "composite": true,
-    "declarationMap": true
+    "declarationMap": true,
+    "paths": {}
   },
   "include": ["src"],
   "exclude": ["dist"]
