@@ -17,8 +17,8 @@
     "db:down": "docker compose -f apps/backend/docker-compose.yml down",
     "prisma:migrate": "pnpm --filter pipr-backend run prisma:migrate",
     "prisma:generate": "pnpm --filter pipr-backend run prisma:generate",
-    "clean": "pnpm -r exec rm -rf dist .turbo node_modules/.cache",
-    "typecheck": "tsc -b"
+    "typecheck": "tsc -b",
+    "clean": "rm -rf packages/*/dist apps/*/dist **/*.tsbuildinfo"
   },
   "keywords": [
     "llm",
