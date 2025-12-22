@@ -34,12 +34,26 @@ model Task {
 }
 
 model AgentRun {
-  id          String    @id @default(cuid())
-  agentName   String
-  inputJson   Json
-  outputJson  Json?
-  rawOutput   String?
-  status      String    @default("completed")
-  createdAt   DateTime  @default(now())
-  completedAt DateTime?
+  id            String         @id @default(cuid())
+  agentName     String
+  inputJson     Json
+  outputJson    Json?
+  rawOutput     String?
+  status        String         @default("completed")
+  createdAt     DateTime       @default(now())
+  completedAt   DateTime?
+  taskProposals TaskProposal[]
+}
+
+model TaskProposal {
+  id          String   @id @default(cuid())
+  agentRunId  String
+  title       String
+  description String?
+  estimate    Int?
+  provenance  Json
+  status      String // "proposed" || "accepted" || "rejected"
+  externalRef String? // Github issue url
+  createdAt   DateTime @default(now())
+  agentRun    AgentRun @relation(fields: [agentRunId], references: [id])
 }
