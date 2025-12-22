@@ -16,6 +16,7 @@
   "license": "GPLv3",
   "packageManager": "pnpm@10.23.0",
   "dependencies": {
+    "@fastify/cors": "^11.2.0",
     "@pipr/domain": "workspace:*",
     "@prisma/adapter-pg": "^7.1.0",
     "@prisma/client": "^7.1.0",

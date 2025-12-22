@@ -1,10 +1,16 @@
 import Fastify from "fastify";
+import cors from "@fastify/cors";
 import { fastifyTRPCPlugin } from "@trpc/server/adapters/fastify";
 import { appRouter } from "./trpc/router.js";
 import { createContext } from "./trpc/context.js";
 
 async function main() {
   const server = Fastify({ logger: true });
+
+  await server.register(cors, {
+    origin: ["http://localhost:3000"],
+    credentials: true,
+  });
 
   await server.register(fastifyTRPCPlugin, {
     prefix: "/trpc",
