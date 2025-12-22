@@ -68,6 +68,8 @@ export default function PlannerPage() {
         projectId: projectId ?? undefined,
       });
 
+      console.log("Query result", result);
+
       setAgentRunId(result.agentRunId);
       setTasks(
         result.tasks.map((t, i) => ({
@@ -76,6 +78,7 @@ export default function PlannerPage() {
         })),
       );
     } catch (err) {
+      console.log("Error: ", String(err));
       alert(String(err));
     } finally {
       setLoading(false);

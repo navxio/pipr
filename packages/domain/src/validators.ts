@@ -23,3 +23,16 @@ export const AcceptInput = z.object({
   projectId: z.string().optional(),
   tasks: z.array(TaskSuggestion),
 });
+
+export const PlannerOutputSchema = z.object({
+  tasks: z.array(
+    z.object({
+      title: z.string(),
+      description: z.string().optional(),
+      estimate: z.number(),
+      provenance: z.array(z.string()).optional(),
+    }),
+  ),
+});
+
+export type PlannerOutput = z.infer<typeof PlannerOutputSchema>;

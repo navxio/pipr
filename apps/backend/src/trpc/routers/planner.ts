@@ -1,4 +1,5 @@
 import { PlanInput, PlanResponse, AcceptInput } from "@pipr/domain";
+import { runPlannerLLM } from "../../agents/planner.js";
 
 import { initTRPC } from "@trpc/server";
 import type { Context } from "../context.js";
@@ -12,7 +13,7 @@ export const plannerRouter = t.router({
     .mutation(async ({ input, ctx }) => {
       const { prisma } = ctx;
 
-      // 1. Create AgentRun
+      // 1. Create AgentRun (thinking starts here)
       const run = await prisma.agentRun.create({
         data: {
           agentName: "planner-v1",
@@ -20,31 +21,23 @@ export const plannerRouter = t.router({
         },
       });
 
-      // 2. Run planner agent (stub for now)
-      const tasks = [
-        {
-          title: "Clarify requirements",
-          description: "Write a short spec and acceptance criteria",
-          estimate: 2,
-          provenance: ["generated locally"],
-        },
-        {
-          title: "Implement core feature",
-          estimate: 6,
-          provenance: ["generated locally"],
-        },
-      ];
+      // 2. Run planner agent via Ollama
+      const { tasks, rawResponse } = await runPlannerLLM(input.goal);
 
-      // 3. Persist output
+      // 3. Persist reasoning + output
       await prisma.agentRun.update({
         where: { id: run.id },
         data: {
           outputJson: { tasks },
+          rawOutput: rawResponse, // if you have this column
           completedAt: new Date(),
         },
       });
 
-      return { agentRunId: run.id, tasks };
+      return {
+        agentRunId: run.id,
+        tasks,
+      };
     }),
 
   accept: t.procedure.input(AcceptInput).mutation(async ({ input, ctx }) => {
@@ -54,6 +47,7 @@ export const plannerRouter = t.router({
       input.projectId ??
       (await prisma.project.create({ data: { name: "Default" } })).id;
 
+    // NOTE: this is optional long-term; fine for demo
     for (const task of input.tasks) {
       await prisma.task.create({
         data: {
