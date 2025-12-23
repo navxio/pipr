@@ -1,125 +1,90 @@
 # pipr
 
-Project Intelligence & Planning Runtime
+**Project Intelligence & Planning Runtime**
 
-## Description
+pipr is an experimental, open-source project intelligence tool for solo founders and small development teams.
 
-pipr is an experimental, open-source project planning runtime that uses LLMs and retrieval-augmented generation (RAG) to help teams and solo founders plan, triage, and maintain project context. It is designed to be developer-first, extensible, and production-ready as a hosted SaaS later while remaining fully usable as a self-hosted OSS tool.
+It helps you turn _current intent_ into _relevant, explainable execution plans_ by grounding LLM-based planning in your project’s real context (codebase, documentation, and prior decisions).
 
+pipr is not a task tracker or PM system.  
+It is a thinking and planning companion that sits _before_ execution tools like GitHub.
 
-## Goals / Motivation
+---
 
-• Reduce routine product management cognitive load (triage, task decomposition, meeting summaries).
+## What problem pipr solves
 
-• Make every decision and the reasoning behind it discoverable and auditable.
+Early-stage projects move fast, assumptions change often, and most planning context lives only in your head.
 
-• Give small teams and solo founders superhuman project memory and context recall.
+pipr helps by:
 
-• Provide a composable agent runtime so teams can create domain-specific planning agents.
+- Reducing cognitive load around planning and triage
+- Producing concrete task proposals from fuzzy goals
+- Preserving _why_ decisions were made, not just _what_ was done
+- Keeping planning history discoverable as the project evolves
 
+---
 
-## Features (conceptual)
+## How pipr works (core loop)
 
-Core
-• Goal-to-tasks decomposition — Agent converts high-level goals into scoped tasks with estimates, dependencies and acceptance criteria.
+1. You describe what you want to move forward _right now_ (a goal)
+2. pipr plans against existing project context (e.g. README, code structure)
+3. An LLM proposes a small set of actionable task **proposals**
+4. You selectively accept or reject those proposals
+5. Accepted proposals can be pushed to execution systems (e.g. GitHub issues)
+6. Decisions and reasoning are recorded for future reference
 
-• Intelligent triage & prioritization — Auto-classify and prioritize incoming requests by urgency, impact, and dependency.
+pipr does not own execution state — tools like GitHub remain the source of truth.
 
-• RAG-backed context store — Local vector index (pgvector or equivalent) with embeddings for docs, meeting transcripts, commit messages, and historical decisions.
+---
 
-• Agent runtime (Mastra-based) — Compose agents and workflows (planner, triage, notifier, auditor) that can call tools and mutate canonical project state.
+## What exists today
 
-• Decision history / audit trail — Every agent suggestion includes provenance (retrieved snippets, confidence, timestamps); decisions are recorded in Postgres.
+- Goal-to-task planning using a local or hosted LLM
+- Project-context grounding via README ingestion
+- Task proposals with estimates and provenance
+- Human-in-the-loop acceptance / rejection
+- Persistent planning history (AgentRuns, proposals, decisions)
+- Type-safe backend API (tRPC) and React UI
 
+---
 
-## Developer-focused
+## What pipr is deliberately _not_ (yet)
 
-• Type-safe API using tRPC and shared TypeScript types across frontend/backend.
+- A full project management tool
+- A workflow engine
+- An autonomous agent system
+- A replacement for GitHub, Jira, or Linear
 
-• Prisma + Postgres canonical store for ACID state: Project, Task, User, AgentRun, Decision models.
+Those may come later — if they prove necessary.
 
-• Embeddings pipeline with configurable model providers and chunking strategy.
+---
 
-• Extensible tools interface so agents can call external systems (GitHub, Slack, Linear, Jira, CI/CD) through authenticated adapters.
+## Intended users
 
-UX / Product
-• Modern React UI with multiple views: Kanban, Roadmap, Task list, Decision history, Agent suggestions side-by-side.
+- Solo founders iterating toward product–market fit
+- Small dev teams without a dedicated PM
+- Developers who want better planning without heavy process
 
-• Accept/Reject flow — Human-in-the-loop interface to accept or modify agent proposals; every action recorded.
+---
 
-• Notifications & nudges — Scheduled reminders, stale detection, and follow-up automation.
+## Tech (current, minimal)
 
-## Architecture Overview
+- Backend: Fastify + tRPC
+- Frontend: React + Vite
+- Database: Postgres + Prisma
+- LLMs: Local (Ollama) or hosted providers
+- Context: Plain-text ingestion (README for now)
 
-• Frontend: React + tRPC client (in /apps/frontend). Renders agent outputs, collects user feedback, and forwards actions to backend.
+---
 
-• Backend: Fastify + tRPC server (in /apps/backend) that exposes canonical APIs and agent tool adapters.
+## Status
 
-• Agent Service: Mastra-based agent runtime (co-located or separate /apps/agents) responsible for running workflows and interacting with tools + vector DB.
+pipr is under active development and is being used to plan its own evolution.
 
-• Database: Postgres + Prisma for canonical state. Optional Pgvector extension for vectors.
+Expect breaking changes.
 
-• Vector store: pgvector for embeddings and retrieval.
-
-• Object store: S3-compatible storage for attachments and transcripts.
-
-• Embedding & Model Providers: Pluggable provider layer (OpenAI, local LLMs, Anthropic, etc.) with config-driven selection.
-
-
-## Agent Roles (examples)
-
-• Planner — Breaks goals into tasks and proposes milestones.
-
-• Triage agent — Classifies and assigns incoming tasks or issues.
-
-• Summarizer — Converts meeting transcript → decisions + action items.
-
-• Roadmap agent — Proposes roadmap adjustments based on velocity and priority.
-
-• Auditor — Attaches provenance and records final decisions.
-
-
-## Data Model (high level)
-
-• Project: id, name, owner, metadata
-
-• Task: id, projectId, title, description, estimate, status, assignee, dependsOn[]
-
-• AgentRun: id, agentName, input, output, provenance, metrics, completedAt
-
-• Decision: id, projectId, summary, rationale, sourceSnippets, createdBy (agent | user)
-
-
-## Security & Privacy
-
-• Pluggable access control for retrieval: queries to vector DB may be scoped per project or per user.
-
-• Sensitive sources can be queried at runtime via authenticated tool adapters instead of indexing into a central RAG store.
-
-• Audit logs capture agent tool calls, retrieved snippets, and user actions for accountability.
-
-## Getting Started (developer)
-
-* Clone repo
-* pnpm install
-* pnpm --filter @pipr/backend dev (or run the dev script for the monorepo)
-* Run migrations: pnpm --filter @pipr/backend prisma migrate dev
-* Seed sample project and start frontend
-* Run a simple agent locally against a small README ingestion pipeline
-
-
-
-## Contributing
-
-See [Contributing.md](./CONTRIBUTING.md)
+---
 
 ## License
 
-• Proposed: Apache-2.0 if you want community adoption, or BUSL-style source-available if you prefer protecting hosted business.
-
-⸻
-
-- @domain: shared domain contracts (no IO, no framework code)
-- @api: backend API surface (types only)
-- apps/backend: API implementation
-- apps/web: frontend client
+TBD (Apache-2.0 or source-available, depending on direction)
