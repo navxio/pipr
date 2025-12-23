@@ -8,6 +8,5 @@
     "moduleResolution": "NodeNext",
     "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo"
   },
-  "include": ["src", "prisma"],
-  "references": [{ "path": "../../packages/domain" }]
+  "include": ["src", "prisma"]
 }
