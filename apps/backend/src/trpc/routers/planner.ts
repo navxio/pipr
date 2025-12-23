@@ -1,4 +1,4 @@
-import { PlanInput, PlanResponse } from "@pipr/domain";
+import { PlanInput, PlanResponse } from "@pipr/shared";
 import { runPlannerLLM } from "../../agents/planner.js";
 
 import { initTRPC } from "@trpc/server";

@@ -1,5 +1,5 @@
 import fetch from "node-fetch";
-import { PlannerOutputSchema } from "@pipr/domain";
+import { PlannerOutputSchema } from "@pipr/shared";
 import { readProjectContext } from "../context/readProjectContext.js";
 
 const PLANNER_PROMPT = (goal: string, projectContext: string) =>

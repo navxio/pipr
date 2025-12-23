@@ -3,9 +3,8 @@
     "composite": true,
     "baseUrl": ".",
     "paths": {
-      "@pipr/domain/*": ["packages/domain/dist/*"],
-      "@pipr/domain": ["packages/domain/dist/index.d.ts"],
-      "@pipr/api": ["packages/api/index.ts"]
+      "@pipr/shared/*": ["packages/shared/dist/*"],
+      "@pipr/shared": ["packages/shared/dist/index.d.ts"]
     },
     "strict": true,
     "target": "es2023",

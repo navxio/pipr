@@ -17,7 +17,7 @@
   "packageManager": "pnpm@10.23.0",
   "dependencies": {
     "@fastify/cors": "^11.2.0",
-    "@pipr/domain": "workspace:*",
+    "@pipr/shared": "workspace:*",
     "@prisma/adapter-pg": "^7.1.0",
     "@prisma/client": "^7.1.0",
     "@trpc/server": "^11.7.2",
