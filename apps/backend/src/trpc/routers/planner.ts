@@ -1,4 +1,4 @@
-import { PlanInput, PlanResponse, AcceptInput } from "@pipr/domain";
+import { PlanInput, PlanResponse } from "@pipr/domain";
 import { runPlannerLLM } from "../../agents/planner.js";
 
 import { initTRPC } from "@trpc/server";
@@ -25,6 +25,7 @@ export const plannerRouter = t.router({
       const { tasks, rawResponse } = await runPlannerLLM(input.goal);
 
       // 3. Persist reasoning + output
+      //TODO: add these to a transaction
       await prisma.agentRun.update({
         where: { id: run.id },
         data: {
@@ -34,31 +35,24 @@ export const plannerRouter = t.router({
         },
       });
 
+      const proposals = await Promise.all(
+        tasks.map((t) =>
+          prisma.taskProposal.create({
+            data: {
+              agentRunId: run.id,
+              title: t.title,
+              description: t.description,
+              estimate: t.estimate,
+              provenance: t.provenance,
+              status: "proposed",
+            },
+          }),
+        ),
+      );
+
       return {
         agentRunId: run.id,
-        tasks,
+        proposals,
       };
     }),
-
-  accept: t.procedure.input(AcceptInput).mutation(async ({ input, ctx }) => {
-    const { prisma } = ctx;
-
-    const projectId =
-      input.projectId ??
-      (await prisma.project.create({ data: { name: "Default" } })).id;
-
-    // NOTE: this is optional long-term; fine for demo
-    for (const task of input.tasks) {
-      await prisma.task.create({
-        data: {
-          projectId,
-          title: task.title,
-          description: task.description,
-          estimate: task.estimate,
-        },
-      });
-    }
-
-    return { projectId };
-  }),
 });
