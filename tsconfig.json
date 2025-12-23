@@ -5,8 +5,7 @@
     "paths": {
       "@pipr/domain/*": ["packages/domain/dist/*"],
       "@pipr/domain": ["packages/domain/dist/index.d.ts"],
-      "@pipr/api": ["packages/api/dist/index.d.ts"],
-      "@pipr/api/*": ["packages/api/dist/*"]
+      "@pipr/api": ["packages/api/index.ts"]
     },
     "strict": true,
     "target": "es2023",

@@ -1,9 +1,0 @@
-{
-  "name": "@pipr/api",
-  "private": true,
-  "version": "0.0.1",
-  "types": "dist/index.d.ts",
-  "scripts": {
-    "build": "tsc -b ."
-  }
-}
