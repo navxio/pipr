@@ -43,6 +43,7 @@ model AgentRun {
   createdAt     DateTime       @default(now())
   completedAt   DateTime?
   taskProposals TaskProposal[]
+  decisionNotes DecisionNote[]
 }
 
 model TaskProposal {
@@ -56,4 +57,13 @@ model TaskProposal {
   externalRef String? // Github issue url
   createdAt   DateTime @default(now())
   agentRun    AgentRun @relation(fields: [agentRunId], references: [id])
+}
+
+model DecisionNote {
+  id         String   @id @default(cuid())
+  agentRunId String
+  note       String
+  createdAt  DateTime @default(now())
+
+  agentRun AgentRun @relation(fields: [agentRunId], references: [id])
 }
