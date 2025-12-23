@@ -1,19 +1,19 @@
 // for zod schemas
 import { z } from "zod";
 
-export const PlanInput = z.object({
+export const PlanInputSchema = z.object({
   projectId: z.string().optional(),
   goal: z.string().min(5),
 });
 
-export const TaskSuggestion = z.object({
+export const TaskSuggestionSchema = z.object({
   title: z.string(),
   description: z.string().optional(),
   estimate: z.number().optional(),
   provenance: z.array(z.string()).optional(),
 });
 
-export const TaskProposal = z.object({
+export const TaskProposalSchema = z.object({
   id: z.string(),
   agentRunId: z.string(),
   title: z.string(),
@@ -25,12 +25,12 @@ export const TaskProposal = z.object({
   createdAt: z.string(), // ISO date from Prisma
 });
 
-export const PlanResponse = z.object({
+export const PlanResponseSchema = z.object({
   agentRunId: z.string(),
-  proposals: z.array(TaskProposal),
+  proposals: z.array(TaskProposalSchema),
 });
 
-export const AcceptInput = z.object({
+export const AcceptInputSchema = z.object({
   agentRunId: z.string(),
   proposalIds: z.array(z.string()),
   projectId: z.string().optional(),
@@ -47,5 +47,7 @@ export const PlannerOutputSchema = z.object({
     }),
   ),
 });
+
+export type TaskProposal = z.infer<typeof TaskProposalSchema>;
 
 export type PlannerOutput = z.infer<typeof PlannerOutputSchema>;

@@ -1,4 +1,4 @@
-import { PlanInput, PlanResponse } from "@pipr/shared";
+import { PlanInputSchema, PlanResponseSchema } from "@pipr/shared";
 import { runPlannerLLM } from "../../agents/planner.js";
 
 import { initTRPC } from "@trpc/server";
@@ -8,8 +8,8 @@ const t = initTRPC.context<Context>().create();
 
 export const plannerRouter = t.router({
   plan: t.procedure
-    .input(PlanInput)
-    .output(PlanResponse)
+    .input(PlanInputSchema)
+    .output(PlanResponseSchema)
     .mutation(async ({ input, ctx }) => {
       const { prisma } = ctx;
 
