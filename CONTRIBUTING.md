@@ -1,238 +1,153 @@
-# PIPR – Developer Architecture Guide
+# Contributing to PIPR
 
-This repository is a pnpm-based monorepo with a deliberately strict architecture.
-The goal is to make dependency direction, type sharing, and runtime boundaries explicit, even if that costs a bit of upfront complexity.
+This repository is a pnpm monorepo with intentionally strict architectural boundaries.
+Please read this document before modifying configuration, build logic, or dependencies.
 
-If you are contributing, please read this once before touching configs.
+## Repository Structure
 
-⸻
-
-High-level overview
-
+```
 apps/
-backend/ # Node.js ESM backend (Fastify + tRPC + Prisma)
-web/ # Frontend app (Vite + React + TypeScript)
-
+  backend/     Node.js backend (Fastify + tRPC + Prisma, ESM)
+  web/         Frontend app (Vite + React + TypeScript)
 packages/
-domain/ # Domain contracts (types, schemas, validators)
-api/ # API surface (types-only, derived from backend)
+  shared/      Shared contracts (types, schemas, validators)
+```
 
-There are two kinds of things in this repo:
+- **Apps** are runnable, deployable units
+- **Packages** expose reusable contracts or libraries
 
-Kind Meaning
-Apps Deployable, runnable artifacts
-Packages Importable contracts / libraries
+## Dependency Rules (Strict)
 
-⸻
+### Allowed dependency direction
 
-Dependency direction (NON-NEGOTIABLE)
+```
+shared → backend → web
+```
 
-The entire repo is built around this one invariant:
+### Allowed imports
 
-@pipr/domain → backend → @pipr/api → web
+- `backend` → `@pipr/shared`
+- `web` → `@pipr/shared`
+- `web` → `backend` (types only)
 
-Allowed imports
-• backend → @pipr/domain
-• @pipr/api → backend (types only)
-• web → @pipr/domain
-• web → @pipr/api
+### Forbidden imports
 
-Forbidden imports (do not do this)
-• web → backend
-• domain → backend
-• domain → api
-• api → web
+- `shared` → `backend`
+- `shared` → `web`
+- `backend` → `web`
+- runtime imports from `web` → `backend`
 
-If you break this, TypeScript will eventually scream — and it should.
+**Violating these rules will break type safety or builds.**
 
-⸻
+## Package Responsibilities
 
-Packages explained
+### @pipr/shared
 
-@pipr/domain (domain contracts)
+- Zod schemas
+- DTOs / request–response types
+- Schema-derived TypeScript types
 
-What it is
-• Pure domain contracts
-• Zod schemas
-• DTOs, request/response types
-• No runtime code, no IO, no framework logic
+#### Must not contain
 
-What it is not
-• No backend logic
-• No database access
-• No HTTP / tRPC / Fastify code
+- Backend logic
+- Database access
+- HTTP / tRPC code
+- Side effects
 
-Build output
-• Emits .d.ts only
-• Consumed via packages/domain/dist/index.d.ts
+Exports must be defined via `src/index.ts`.
 
-Rule
+### Backend (apps/backend)
 
-Everything that consumers import must be exported from src/index.ts
+- Node.js ESM (`moduleResolution: NodeNext`)
+- Fastify + tRPC + Prisma
+- Uses `tsx` for development
 
-⸻
+#### Rules
 
-@pipr/api (API surface)
+- Relative imports must use `.js` extensions
+- May import from `@pipr/shared`
+- Must not import frontend code
 
-What it is
-• A types-only package
-• Exposes the public backend API shape (e.g. AppRouter)
-• The only thing frontend uses to know about backend APIs
+The backend owns the API shape (`AppRouter`).
 
-What it is not
-• No runtime code
-• No HTTP logic
-• No business logic
+### Frontend (apps/web)
 
-Build output
-• Emits a single dist/index.d.ts
-• Depends on backend types, not runtime
+- Vite + React + TypeScript
+- Consumes:
+  - `@pipr/shared`
+  - backend types only
 
-⸻
+#### Build strategy
 
-Apps explained
-
-Backend (apps/backend)
-• Node.js ESM (moduleResolution: NodeNext)
-• Fastify + tRPC
-• Prisma (ESM-first)
-• Uses tsx for dev
-
-Important backend rules
-• Relative imports must use .js extensions
-(this is required for real Node ESM)
-• Backend can import from @pipr/domain
-• Backend must not import from @pipr/api
-
-This is intentional and future-proof.
-
-⸻
-
-Web (apps/web)
-• Vite + React + TypeScript
-• Uses bundler semantics, not Node semantics
-• Consumes only:
-• @pipr/domain (dist)
-• @pipr/api (dist)
-
-Build strategy (important)
-
-"build": "vite build"
-"typecheck": "tsc -p tsconfig.app.json --noEmit"
-
-Why:
-• vite build reflects what actually ships
-• tsc is used as a separate analysis step
-• Avoids TypeScript crawling backend source
-
-Do not add tsc to the web build step.
-
-⸻
-
-TypeScript configuration philosophy
-
-Root tsconfig.json
-• Defines policy, not environment
-• Contains:
-• strictness
-• shared paths
-• Does not decide runtime module systems
-
-"paths": {
-"@pipr/domain": ["packages/domain/dist/index.d.ts"],
-"@pipr/domain/_": ["packages/domain/dist/_"],
-"@pipr/api": ["packages/api/dist/index.d.ts"],
-"@pipr/api/_": ["packages/api/dist/_"]
+```json
+{
+  "build": "vite build",
+  "typecheck": "tsc -p tsconfig.app.json --noEmit"
 }
+```
 
-Root paths always point to dist/, never src/.
+**Do not add `tsc` to the frontend build step.**
 
-Source access (if ever needed) must be explicitly overridden per-project.
+## TypeScript Configuration Rules
 
-⸻
+- Root `tsconfig.json` defines policy, not runtime
+- Path aliases must point to `dist/`, never `src/`
+- Project references and solution builds are intentionally avoided
+- Source access must be explicitly opted into per project
 
-Build commands (canonical)
+## Canonical Commands
 
-From the repo root:
-
-pnpm build:domain # builds @pipr/domain (d.ts only)
-pnpm build:api # builds @pipr/api (d.ts only)
-pnpm dev:backend # starts backend (tsx)
-pnpm --filter pipr-web build # vite build
+```bash
+pnpm build:shared
+pnpm dev:backend
+pnpm --filter pipr-web build
+```
 
 Or everything:
 
+```bash
 pnpm build
+```
 
-⸻
+## Common Issues
 
-Common pitfalls (read this if something breaks)
+### Cannot find @pipr/shared
 
-❌ “Cannot find module @pipr/domain”
-• Check that:
-• packages/domain/dist/index.d.ts exists
-• Symbols are exported from src/index.ts
-• Root paths point to dist/index.d.ts
-• TS server was restarted
+- Ensure `packages/shared/dist` exists
+- Ensure exports are re-exported from `src/index.ts`
+- Restart the TypeScript server
 
-⸻
+### TS6307 / TS6059 errors
 
-❌ TS6307 errors in frontend
+- Frontend is likely pulling in backend or shared source
+- Do not use `tsc -b`
+- Do not reference projects in frontend tsconfig
 
-You are almost certainly:
-• letting frontend see backend/domain source
-• using tsc -b in a web build
-• referencing packages in apps/web/tsconfig.json
+### Missing build output
 
-Frontend must consume packages, not projects.
-
-⸻
-
-❌ No dist/ folder after build
-
-Likely causes:
-• incremental TS cache (tsbuildinfo)
-• build skipped as “up to date”
-
-Fix:
-
-rm -rf packages/_/dist
-rm -rf \*\*/_.tsbuildinfo
+```bash
+rm -rf packages/*/dist
+rm -rf **/*.tsbuildinfo
 pnpm build
+```
 
-⸻
+## Publishing Policy
 
-Publishing
+Packages are private workspace packages.
+Publishing will only be considered if cross-repository reuse becomes necessary.
 
-Packages are currently private workspace packages.
-• We do not publish just to reserve the scope
-• @pipr/\* is safe as long as the npm org/user exists
-• Publishing will be revisited only if cross-repo consumption is needed
+## Final Guidance
 
-⸻
+This repository favors:
 
-Design philosophy (why this is strict)
+- explicit boundaries over convenience
+- contracts over shared source
+- correctness over tooling shortcuts
 
-This repo intentionally favors:
-• explicit boundaries over convenience
-• correctness over magic
-• contracts over shared source
-• real Node ESM semantics
+If something feels overly strict, ask why before relaxing it.
 
-This costs some upfront setup, but:
-• prevents architectural drift
-• avoids accidental coupling
-• scales cleanly as the codebase grows
+### When in doubt
 
-⸻
-
-Final note for contributors
-
-If something feels “unnecessarily strict”, ask why the boundary exists before relaxing it.
-
-Most of the rules here exist because relaxing them caused subtle bugs or long-term pain in other systems.
-
-When in doubt:
-• packages expose contracts
-• apps consume contracts
-• runtime code stays isolated
+- packages expose contracts
+- apps consume contracts
+- runtime code stays isolated
