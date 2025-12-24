@@ -33,17 +33,10 @@ model Task {
   project Project @relation(fields: [projectId], references: [id])
 }
 
-model AgentRun {
-  id            String         @id @default(cuid())
-  agentName     String
-  inputJson     Json
-  outputJson    Json?
-  rawOutput     String?
-  status        String         @default("completed")
-  createdAt     DateTime       @default(now())
-  completedAt   DateTime?
-  taskProposals TaskProposal[]
-  decisionNotes DecisionNote[]
+enum TaskProposalStatus {
+  proposed
+  accepted
+  rejected
 }
 
 model TaskProposal {
@@ -57,6 +50,19 @@ model TaskProposal {
   externalRef String? // Github issue url
   createdAt   DateTime @default(now())
   agentRun    AgentRun @relation(fields: [agentRunId], references: [id])
+}
+
+model AgentRun {
+  id            String         @id @default(cuid())
+  agentName     String
+  inputJson     Json
+  outputJson    Json?
+  rawOutput     String?
+  status        String         @default("completed")
+  createdAt     DateTime       @default(now())
+  completedAt   DateTime?
+  taskProposals TaskProposal[]
+  decisionNotes DecisionNote[]
 }
 
 model DecisionNote {
