@@ -52,7 +52,7 @@ model TaskProposal {
   title       String
   description String?
   estimate    Int?
-  provenance  Json
+  provenance  String[]
   status      String // "proposed" || "accepted" || "rejected"
   externalRef String? // Github issue url
   createdAt   DateTime @default(now())
