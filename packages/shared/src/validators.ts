@@ -22,7 +22,7 @@ export const TaskProposalSchema = z.object({
   provenance: z.array(z.string()),
   status: z.enum(["proposed", "accepted", "rejected"]),
   externalRef: z.string().optional(),
-  createdAt: z.string(), // ISO date from Prisma
+  createdAt: z.date(), // ISO date from Prisma
 });
 
 export const PlanResponseSchema = z.object({
@@ -35,6 +35,12 @@ export const AcceptInputSchema = z.object({
   proposalIds: z.array(z.string()),
   projectId: z.string().optional(),
   note: z.string().optional(), // decision context
+});
+
+export const AcceptProposalsInputSchema = z.object({
+  agentRunId: z.string(),
+  proposalIds: z.array(z.string()).min(1),
+  note: z.string().optional(),
 });
 
 export const PlannerOutputSchema = z.object({

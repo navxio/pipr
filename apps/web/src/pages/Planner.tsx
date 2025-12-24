@@ -1,14 +1,16 @@
 // apps/frontend/src/pages/Planner.tsx
 import { useState } from "react";
 import { trpc } from "../trpc";
-import type { TaskSuggestionType } from "@pipr/domain/types";
+import type { TaskProposal } from "@pipr/shared";
 
-function TaskCard({
-  task,
-  onChange,
+function ProposalCard({
+  proposal,
+  selected,
+  onToggle,
 }: {
-  task: TaskSuggestionType;
-  onChange?: (t: TaskSuggestionType) => void;
+  proposal: TaskProposal;
+  selected: boolean;
+  onToggle: () => void;
 }) {
   return (
     <div
@@ -17,92 +19,94 @@ function TaskCard({
         padding: 12,
         borderRadius: 8,
         marginBottom: 8,
+        background: selected ? "#f6f9ff" : "#fff",
       }}
     >
-      <input
-        value={task.title}
-        onChange={(e) => onChange?.({ ...task, title: e.target.value })}
-        style={{ fontSize: 16, width: "100%", marginBottom: 6 }}
-      />
-      <textarea
-        value={task.description ?? ""}
-        onChange={(e) => onChange?.({ ...task, description: e.target.value })}
-        rows={3}
-        style={{ width: "100%", marginBottom: 6 }}
-      />
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-        <input
-          type="number"
-          value={task.estimate ?? ""}
-          onChange={(e) =>
-            onChange?.({
-              ...task,
-              estimate: e.target.value ? Number(e.target.value) : undefined,
-            })
-          }
-          placeholder="estimate (hours)"
-          style={{ width: 120 }}
-        />
-        <div style={{ color: "#666", fontSize: 12 }}>
-          {task.provenance?.map((p, i) => (
-            <div key={i}>• {p}</div>
-          ))}
+      <label style={{ display: "flex", gap: 8, cursor: "pointer" }}>
+        <input type="checkbox" checked={selected} onChange={onToggle} />
+
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 16, fontWeight: 500 }}>{proposal.title}</div>
+
+          {proposal.description && (
+            <div style={{ marginTop: 4, color: "#444" }}>
+              {proposal.description}
+            </div>
+          )}
+
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              marginTop: 8,
+              fontSize: 12,
+              color: "#666",
+            }}
+          >
+            <div>
+              {proposal.provenance.map((p, i) => (
+                <div key={i}>• {p}</div>
+              ))}
+            </div>
+
+            {proposal.estimate != null && <div>~{proposal.estimate}h</div>}
+          </div>
         </div>
-      </div>
+      </label>
     </div>
   );
 }
 
 export default function PlannerPage() {
   const [goal, setGoal] = useState("");
-  const [tasks, setTasks] = useState<TaskSuggestionType[] | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [projectId, setProjectId] = useState<string | null>(null);
   const [agentRunId, setAgentRunId] = useState<string | null>(null);
+  const [proposals, setProposals] = useState<TaskProposal[]>([]);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [decisionNote, setDecisionNote] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handlePlan = async () => {
     setLoading(true);
     try {
-      const result = await trpc.planner.plan.mutate({
-        goal,
-        projectId: projectId ?? undefined,
-      });
-
-      console.log("Query result", result);
+      const result = await trpc.planner.plan.mutate({ goal });
+      console.log("trpc proceduce result: ", result);
 
       setAgentRunId(result.agentRunId);
-      setTasks(
-        result.tasks.map((t, i) => ({
-          id: `s-${i}`,
-          ...t,
-        })),
-      );
+      setProposals(result.proposals);
+      setSelectedIds(new Set());
     } catch (err) {
-      console.log("Error: ", String(err));
+      console.error("problem with trpc procedure: ", String(err));
       alert(String(err));
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAccept = async () => {
-    if (!tasks || !agentRunId) return;
+  const toggleSelection = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const handleAcceptSelected = async () => {
+    if (!agentRunId || selectedIds.size === 0) return;
 
     setLoading(true);
     try {
-      const result = await trpc.planner.accept.mutate({
+      await trpc.planner.acceptProposals.mutate({
         agentRunId,
-        projectId: projectId ?? undefined,
-        tasks,
+        proposalIds: Array.from(selectedIds),
+        note: decisionNote || undefined,
       });
 
-      setProjectId(result.projectId);
-      alert("Tasks created for project: " + result.projectId);
-
       // reset UI
-      setTasks(null);
       setGoal("");
       setAgentRunId(null);
+      setProposals([]);
+      setSelectedIds(new Set());
+      setDecisionNote("");
     } catch (err) {
       alert(String(err));
     } finally {
@@ -112,62 +116,61 @@ export default function PlannerPage() {
 
   return (
     <div style={{ padding: 24, maxWidth: 900, margin: "0 auto" }}>
-      <h1>pipr — Planner (prototype)</h1>
-
-      <div style={{ marginBottom: 12 }}>
-        <label style={{ display: "block", marginBottom: 6 }}>
-          Project ID (optional)
-        </label>
-        <input
-          value={projectId ?? ""}
-          onChange={(e) => setProjectId(e.target.value || null)}
-          style={{ width: 300 }}
-        />
-      </div>
+      <h1>pipr — Planner</h1>
 
       <textarea
-        placeholder="Describe the goal (e.g., 'Launch onboarding flow with email sign-up and analytics')"
+        placeholder="What do you want to move forward right now?"
         value={goal}
         onChange={(e) => setGoal(e.target.value)}
         rows={5}
         style={{ width: "100%", marginBottom: 12 }}
       />
 
-      <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+      <div style={{ marginBottom: 16 }}>
         <button onClick={handlePlan} disabled={!goal || loading}>
-          {loading ? "Planning…" : "Plan"}
-        </button>
-        <button
-          onClick={() =>
-            setGoal(
-              "Create onboarding flow\n- email signup\n- welcome email\n- analytics tracking",
-            )
-          }
-        >
-          Try sample goal
+          {loading ? "Planning…" : "Generate plan"}
         </button>
       </div>
 
-      {tasks && (
+      {proposals.length > 0 && (
         <>
-          <h2>Agent Suggestions</h2>
-          {tasks.map((t) => (
-            <TaskCard
-              key={t.id}
-              task={t}
-              onChange={(updated) =>
-                setTasks((prev) =>
-                  prev ? prev.map((x) => (x.id === t.id ? updated : x)) : null,
-                )
-              }
+          <h2>Task proposals</h2>
+
+          {proposals.map((p) => (
+            <ProposalCard
+              key={p.id}
+              proposal={p}
+              selected={selectedIds.has(p.id)}
+              onToggle={() => toggleSelection(p.id)}
             />
           ))}
 
-          <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={handleAccept} disabled={loading}>
-              {loading ? "Accepting…" : "Accept all"}
-            </button>
-            <button onClick={() => setTasks(null)}>Reject / Clear</button>
+          <div style={{ marginTop: 12 }}>
+            <textarea
+              placeholder="Optional: why these?"
+              value={decisionNote}
+              onChange={(e) => setDecisionNote(e.target.value)}
+              rows={2}
+              style={{ width: "100%", marginBottom: 8 }}
+            />
+
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                onClick={handleAcceptSelected}
+                disabled={loading || selectedIds.size === 0}
+              >
+                {loading ? "Saving…" : `Accept ${selectedIds.size} selected`}
+              </button>
+
+              <button
+                onClick={() => {
+                  setProposals([]);
+                  setSelectedIds(new Set());
+                }}
+              >
+                Discard plan
+              </button>
+            </div>
           </div>
         </>
       )}

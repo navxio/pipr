@@ -74,6 +74,7 @@ function extractJson(raw: string): string | null {
 
   return null;
 }
+
 async function callOllama(prompt: string): Promise<string> {
   const res = await fetch("http://localhost:11434/api/generate", {
     method: "POST",
@@ -110,7 +111,8 @@ export async function runPlannerLLM(goal: string) {
         })),
         rawResponse: initialRaw,
       };
-    } catch {
+    } catch (e) {
+      console.error("Could not parse returned json: ", String(e));
       // fall through to repair
     }
   }
