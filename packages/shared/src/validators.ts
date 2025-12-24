@@ -1,5 +1,6 @@
 // for zod schemas
 import { z } from "zod";
+import { TaskProposalStatus } from "./enums.js";
 
 export const PlanInputSchema = z.object({
   projectId: z.string().optional(),
@@ -20,7 +21,7 @@ export const TaskProposalSchema = z.object({
   description: z.string().optional(),
   estimate: z.number().optional(),
   provenance: z.array(z.string()),
-  status: z.enum(["proposed", "accepted", "rejected"]),
+  status: z.nativeEnum(TaskProposalStatus),
   externalRef: z.string().optional(),
   createdAt: z.date(), // ISO date from Prisma
 });

@@ -1,10 +1,37 @@
-import { PlanInputSchema, AcceptProposalsInputSchema } from "@pipr/shared";
+import {
+  PlanInputSchema,
+  AcceptProposalsInputSchema,
+  type PlanInput,
+} from "@pipr/shared";
 import { runPlannerLLM } from "../../agents/planner.js";
 
 import { initTRPC } from "@trpc/server";
 import type { Context } from "../context.js";
 
+import { GitHubAdapter } from "../../adapters/github.js";
+import { buildIssueBody } from "../../adapters/githubTemplates.js";
+
+import { TaskProposalStatus } from "@pipr/shared";
+
 const t = initTRPC.context<Context>().create();
+
+// define the gh adapter on run so it crashes if
+// env vars are invalid / missing
+const github = new GitHubAdapter(
+  process.env.GITHUB_TOKEN!,
+  process.env.GITHUB_OWNER!,
+  process.env.GITHUB_REPO!,
+);
+
+function normalizeTaskProposal(p: any) {
+  return {
+    ...p,
+    provenance: Array.isArray(p.provenance)
+      ? p.provenance.filter((x: any): x is string => typeof x === "string")
+      : [],
+    status: p.status as TaskProposalStatus,
+  };
+}
 
 export const plannerRouter = t.router({
   plan: t.procedure.input(PlanInputSchema).mutation(async ({ input, ctx }) => {
@@ -47,12 +74,7 @@ export const plannerRouter = t.router({
       ),
     );
 
-    const normalizedProposals = proposals.map((p) => ({
-      ...p,
-      provenance: Array.isArray(p.provenance)
-        ? p.provenance.filter((x): x is string => typeof x === "string")
-        : [],
-    }));
+    const normalizedProposals = proposals.map(normalizeTaskProposal);
 
     return {
       agentRunId: run.id,
@@ -124,6 +146,38 @@ export const plannerRouter = t.router({
         },
         orderBy: { createdAt: "asc" },
       });
+
+      const normalizedAccepted = accepted.map(normalizeTaskProposal);
+
+      // start creating issues
+      const agentRun = await prisma.agentRun.findUniqueOrThrow({
+        where: { id: agentRunId },
+      });
+
+      const agentInput = (agentRun.inputJson as PlanInput) || null;
+
+      if (!agentInput) {
+        throw new Error("AgentRun inputJson is missing");
+      }
+
+      for (const proposal of normalizedAccepted) {
+        const issue = await github.createIssue({
+          title: proposal.title,
+          body: buildIssueBody({
+            goal: agentInput.goal,
+            proposal,
+            agentRunId,
+            decisionNote: note,
+          }),
+        });
+
+        await prisma.taskProposal.update({
+          where: { id: proposal.id },
+          data: {
+            externalRef: issue.url,
+          },
+        });
+      }
 
       const rejected = await prisma.taskProposal.findMany({
         where: {
