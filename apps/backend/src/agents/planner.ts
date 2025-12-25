@@ -23,6 +23,20 @@ Constraints:
 - Include a short estimate in hours (integer)
 - Use simple, direct language
 
+EXISTING CAPABILITIES (DO NOT PROPOSE THESE AGAIN):
+
+- Goal-to-task planning via LLM already exists
+- Human-in-the-loop proposal acceptance UI exists
+- Accepted proposals are synced one-way to GitHub Issues
+- Planning history (AgentRuns, proposals, decisions) is persisted
+
+NON-GOALS (DO NOT PROPOSE):
+
+- Bootstrap setup tasks
+- Documentation updates unless explicitly requested
+- Filtering or learning mechanisms
+- GitHub state syncing during planning
+
 Return ONLY valid JSON in the following shape:
 
 {
