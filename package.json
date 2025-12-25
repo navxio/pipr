@@ -14,6 +14,7 @@
     "dev": "pnpm run build:shared && concurrently \"pnpm run dev:backend\" \"pnpm run dev:web\"",
     "db:up": "docker compose -f apps/backend/docker-compose.yml up -d",
     "db:down": "docker compose -f apps/backend/docker-compose.yml down",
+    "db:shell": "psql -h localhost -p 5432 -U pipr pipr_dev",
     "prisma:migrate": "pnpm --filter pipr-backend run prisma:migrate",
     "prisma:generate": "pnpm --filter pipr-backend run prisma:generate",
     "typecheck": "tsc -b",
