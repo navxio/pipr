@@ -77,6 +77,28 @@ Those may come later — if they prove necessary.
 
 ---
 
+## Current Capabilities (Snapshot)
+
+### What pipr can do
+
+- Generate task proposals from a goal using a local LLM (Ollama)
+- Present proposals for human acceptance or rejection
+- Record decisions and provenance
+- Sync accepted proposals one-way to GitHub Issues
+
+### What pipr cannot do (yet)
+
+- Reuse past goals automatically
+- Learn from rejected proposals
+- Read GitHub issue state during planning
+- Manage tasks after creation
+
+### Planning assumptions
+
+- Each goal is treated independently
+- Only explicitly provided context is used
+- GitHub is the execution layer, not the planning layer
+
 ## Status
 
 pipr is under active development and is being used to plan its own evolution.
