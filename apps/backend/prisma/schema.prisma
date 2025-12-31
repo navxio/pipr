@@ -80,6 +80,7 @@ enum PlanningSignalType {
   context
   non_goal
   desired_outcome
+  accepted_work
   completed_work
   decision
 }
