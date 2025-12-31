@@ -18,7 +18,8 @@ model Project {
   name      String
   createdAt DateTime @default(now())
 
-  tasks Task[]
+  tasks           Task[]
+  planningSignals PlanningSignal[]
 }
 
 model Task {
@@ -72,4 +73,25 @@ model DecisionNote {
   createdAt  DateTime @default(now())
 
   agentRun AgentRun @relation(fields: [agentRunId], references: [id])
+}
+
+enum PlanningSignalType {
+  goal
+  context
+  non_goal
+  desired_outcome
+  completed_work
+  decision
+}
+
+model PlanningSignal {
+  id        String             @id @default(cuid())
+  projectId String
+  type      PlanningSignalType
+  content   String
+  source    String // "user" | "system" | "imported"
+  active    Boolean            @default(true)
+  createdAt DateTime           @default(now())
+
+  project Project @relation(fields: [projectId], references: [id])
 }
