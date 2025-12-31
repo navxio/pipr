@@ -1,19 +1,21 @@
 import fetch from "node-fetch";
 import { PlannerOutputSchema } from "@pipr/shared";
-import { readProjectContext } from "../context/readProjectContext.js";
 
 const PLANNER_PROMPT = (goal: string, projectContext: string) =>
   `
-Project Context:
+You are an expert software architect and product planner.
+
+The following information represents the authoritative planning context
+for this project. Treat it as true and complete.
+
+Project Planning Context:
 """
 ${projectContext}
 """
 
-
-You are an expert software architect and product planner.
-
 Your task:
-Break the following goal into a small, concrete, actionable task list suitable for a solo developer.
+Break the following goal into a small, concrete, actionable task list
+that respects all constraints and prior decisions in the context above.
 
 Constraints:
 - 4 to 7 tasks max
@@ -22,6 +24,9 @@ Constraints:
 - Prefer tasks that can be completed in a single focused session
 - Include a short estimate in hours (integer)
 - Use simple, direct language
+
+NOTE:
+The following constraints are transitional and will eventually be derived from planning signals rather than hardcoded here.
 
 EXISTING CAPABILITIES (DO NOT PROPOSE THESE AGAIN):
 
@@ -37,6 +42,8 @@ NON-GOALS (DO NOT PROPOSE):
 - Filtering or learning mechanisms
 - GitHub state syncing during planning
 
+Do not restate or summarize the planning context.
+Only propose tasks.
 Return ONLY valid JSON in the following shape:
 
 {
@@ -109,8 +116,64 @@ async function callOllama(prompt: string): Promise<string> {
   return json.response;
 }
 
-export async function runPlannerLLM(goal: string) {
-  const projectContext = await readProjectContext();
+/**
+ * Executes a single planning run using an LLM.
+ *
+ * This function is the core planner execution primitive in pipr.
+ * It takes a user goal and an already-assembled project planning context,
+ * and produces a small set of actionable task proposals.
+ *
+ * IMPORTANT ARCHITECTURAL NOTES:
+ *
+ * - This function is intentionally pure:
+ *   • No database access
+ *   • No filesystem access
+ *   • No side effects
+ *
+ * - All planning state (context, constraints, history) must be provided
+ *   via the `projectContext` argument.
+ *
+ * - The LLM is expected to reason strictly within the provided context,
+ *   treating it as authoritative and complete.
+ *
+ * Parameters:
+ * - projectId:
+ *   Identifier for the project being planned.
+ *   Included for call-site clarity and future instrumentation.
+ *
+ * - goal:
+ *   The current, session-scoped user intent describing what should
+ *   be moved forward now.
+ *
+ * - projectContext:
+ *   A pre-assembled, human-readable planning frame constructed from
+ *   active planning signals (context, constraints, decisions, completed work).
+ *
+ * Behavior:
+ * - Invokes the planner LLM with a strict prompt contract.
+ * - Attempts to parse a valid JSON response matching PlannerOutputSchema.
+ * - Performs a single JSON repair attempt if the initial output is invalid.
+ *
+ * Output:
+ * - Returns a list of task proposals suitable for human review.
+ * - Each task includes a provenance field indicating its derivation.
+ *
+ * Guarantees:
+ * - Output is validated against PlannerOutputSchema.
+ * - Returned tasks are safe to persist and present to users.
+ *
+ * This function does NOT:
+ * - Rank, filter, or optimize proposals
+ * - Learn from past runs
+ * - Mutate planning signals
+ *
+ * Those responsibilities live elsewhere in the system.
+ */
+export async function runPlannerLLM(
+  projectId: string,
+  goal: string,
+  projectContext: string,
+) {
   const initialRaw = await callOllama(PLANNER_PROMPT(goal, projectContext));
 
   // 1️⃣ Attempt direct extraction
