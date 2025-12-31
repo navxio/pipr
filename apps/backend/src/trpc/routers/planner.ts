@@ -83,6 +83,40 @@ export const plannerRouter = t.router({
     };
   }),
 
+  /**
+   * Finalizes a planning run by accepting or rejecting task proposals.
+   *
+   * This procedure represents the boundary between planning and execution.
+   *
+   * Responsibilities:
+   * - Finalize the outcome of an AgentRun
+   * - Persist human decisions and rationale
+   * - Materialize planning signals that inform future planning runs
+   * - Push accepted work to execution systems (GitHub)
+   *
+   * IMPORTANT SEMANTICS:
+   *
+   * - Accepting a proposal does NOT mean the work is completed.
+   * - Acceptance represents commitment to execution.
+   * - Execution state remains external (e.g. GitHub).
+   *
+   * Planning signals emitted here are intentionally minimal:
+   *
+   * - accepted_work:
+   *   Records work that has already been committed to execution,
+   *   preventing redundant future proposals.
+   *
+   * - decision:
+   *   Records the reasoning behind acceptance or rejection when
+   *   a decision note is provided.
+   *
+   * This procedure does NOT:
+   * - Infer completed work
+   * - Read execution state from GitHub
+   * - Perform ranking or optimization
+   *
+   * Those concerns are deliberately deferred.
+   */
   acceptProposals: t.procedure
     .input(AcceptProposalsInputSchema)
     .mutation(async ({ input, ctx }) => {
@@ -98,38 +132,31 @@ export const plannerRouter = t.router({
         throw new Error("No proposals found for this agent run");
       }
 
-      const allIds = allProposals.map((p) => p.id);
+      const allIds = new Set(allProposals.map((p) => p.id));
+      const invalidIds = proposalIds.filter((id) => !allIds.has(id));
 
-      // 2️⃣ Validate proposalIds belong to this run
-      const invalidIds = proposalIds.filter((id) => !allIds.includes(id));
       if (invalidIds.length > 0) {
         throw new Error(
           `Invalid proposal IDs for this agent run: ${invalidIds.join(", ")}`,
         );
       }
 
-      // 3️⃣ Update accepted proposals
+      // 2️⃣ Accept selected proposals
       await prisma.taskProposal.updateMany({
-        where: {
-          id: { in: proposalIds },
-        },
-        data: {
-          status: "accepted",
-        },
+        where: { id: { in: proposalIds } },
+        data: { status: "accepted" },
       });
 
-      // 4️⃣ Reject all others
+      // 3️⃣ Reject all remaining proposals
       await prisma.taskProposal.updateMany({
         where: {
           agentRunId,
           id: { notIn: proposalIds },
         },
-        data: {
-          status: "rejected",
-        },
+        data: { status: "rejected" },
       });
 
-      // 5️⃣ Persist optional decision note
+      // 4️⃣ Persist optional decision note
       if (note?.trim()) {
         await prisma.decisionNote.create({
           data: {
@@ -139,7 +166,7 @@ export const plannerRouter = t.router({
         });
       }
 
-      // 6️⃣ Return final state
+      // 5️⃣ Fetch accepted proposals (normalized for downstream use)
       const accepted = await prisma.taskProposal.findMany({
         where: {
           agentRunId,
@@ -150,17 +177,14 @@ export const plannerRouter = t.router({
 
       const normalizedAccepted = accepted.map(normalizeTaskProposal);
 
-      // start creating issues
+      // 6️⃣ Fetch AgentRun input for execution context
       const agentRun = await prisma.agentRun.findUniqueOrThrow({
         where: { id: agentRunId },
       });
 
-      const agentInput = (agentRun.inputJson as PlanInput) || null;
+      const agentInput = agentRun.inputJson as PlanInput;
 
-      if (!agentInput) {
-        throw new Error("AgentRun inputJson is missing");
-      }
-
+      // 7️⃣ Push accepted proposals to GitHub Issues
       for (const proposal of normalizedAccepted) {
         const issue = await github.createIssue({
           title: proposal.title,
@@ -174,24 +198,37 @@ export const plannerRouter = t.router({
 
         await prisma.taskProposal.update({
           where: { id: proposal.id },
+          data: { externalRef: issue.url },
+        });
+
+        // 8️⃣ Emit accepted_work planning signal
+        await prisma.planningSignal.create({
           data: {
-            externalRef: issue.url,
+            projectId: agentInput.projectId,
+            type: "accepted_work",
+            content: proposal.title,
+            source: "system",
+            active: true,
           },
         });
       }
 
-      const rejected = await prisma.taskProposal.findMany({
-        where: {
-          agentRunId,
-          status: "rejected",
-        },
-        orderBy: { createdAt: "asc" },
-      });
+      // 9️⃣ Emit decision planning signal (if note exists)
+      if (note?.trim()) {
+        await prisma.planningSignal.create({
+          data: {
+            projectId: agentInput.projectId,
+            type: "decision",
+            content: note.trim(),
+            source: "user",
+            active: true,
+          },
+        });
+      }
 
       return {
         agentRunId,
-        accepted,
-        rejected,
+        accepted: normalizedAccepted,
       };
     }),
 
