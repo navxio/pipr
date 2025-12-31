@@ -16,7 +16,6 @@
   },
   "keywords": [],
   "author": "Navdeep Saini",
-  "license": "GPLv3",
   "packageManager": "pnpm@10.23.0",
   "dependencies": {
     "zod": "^4.1.13"

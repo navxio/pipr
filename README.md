@@ -9,6 +9,9 @@ It helps turn **current intent** into **concrete, explainable execution plans** 
 pipr is **not** a task tracker or project management system.  
 It sits _before_ execution tools like GitHub and helps you decide **what to do next — and why**.
 
+> For a detailed explanation of pipr’s planning model, terminology, and design rationale, see  
+> **[docs/wiki.md](./docs/wiki.md)**
+
 ---
 
 ## What problem pipr solves
@@ -47,14 +50,15 @@ pipr makes planning context explicit, persistent, and inspectable — then uses 
 2. pipr assembles a planning frame using:
    - Authoritative project context
    - Known constraints and non-goals
-   - Previously completed work
-   - Recent decisions and their rationale
+   - Previously accepted work and decisions
 3. An LLM proposes a small set of actionable task **proposals**
 4. You selectively accept or reject proposals
 5. Accepted proposals are synced one-way to execution tools (e.g. GitHub Issues)
-6. Decisions and provenance are recorded for future planning
+6. Decisions and reasoning are recorded for future planning
 
 pipr does **not** own execution state — GitHub (or similar tools) remain the source of truth for work tracking.
+
+pipr models planning explicitly using persistent **planning signals** (context, goals, constraints, accepted work, and decisions) rather than relying on prompt-only reasoning.
 
 ---
 
@@ -78,7 +82,7 @@ Good context dramatically improves planning quality.
 
 - Goal-to-task planning using a local or hosted LLM
 - Explicit project context grounding (README or pasted context)
-- Task proposals with estimates and provenance
+- Task proposals with estimates and optional provenance
 - Human-in-the-loop acceptance and rejection
 - Decision notes explaining _why_ proposals were accepted or rejected
 
@@ -86,8 +90,10 @@ Good context dramatically improves planning quality.
 
 - Agent runs (planning sessions)
 - Task proposals
-- Decisions with provenance
-- Completed work inferred from accepted proposals
+- Decisions
+- Accepted work (commitments to execution)
+
+> Note: Completed work is not yet tracked; execution state lives in external tools.
 
 ### Integration
 
@@ -125,10 +131,13 @@ Key planning signals in v0.1.0 include:
 - Current goal (session-scoped)
 - Persistent project context
 - Explicit non-goals / constraints
-- Already completed work
-- Decisions with provenance
+- Accepted work
+- Decisions
 
 Planning improves as these signals accumulate.
+
+For canonical definitions and design rationale, see  
+**[docs/wiki.md](./docs/wiki.md)**
 
 ---
 
@@ -168,4 +177,6 @@ Expect breaking changes.
 
 ## License
 
-TBD (Apache-2.0 or source-available, depending on direction)
+Apache License 2.0
+
+See [LICENSE](./LICENSE).
