@@ -2,6 +2,7 @@ import {
   PlanInputSchema,
   AcceptProposalsInputSchema,
   type PlanInput,
+  IngestContextSchema,
 } from "@pipr/shared";
 import { runPlannerLLM } from "../../agents/planner.js";
 
@@ -192,5 +193,41 @@ export const plannerRouter = t.router({
         accepted,
         rejected,
       };
+    }),
+
+  /**
+   * Ingests or updates authoritative project context.
+   *
+   * This endpoint creates or replaces the active CONTEXT
+   * planning signal for a project.
+   */
+  ingestContext: t.procedure
+    .input(IngestContextSchema)
+    .mutation(async ({ input, ctx }) => {
+      const { prisma } = ctx;
+      const { projectId, content } = input;
+
+      // Deactivate existing context signals
+      await prisma.planningSignal.updateMany({
+        where: {
+          projectId,
+          type: "context",
+          active: true,
+        },
+        data: { active: false },
+      });
+
+      // Create new authoritative context
+      await prisma.planningSignal.create({
+        data: {
+          projectId,
+          type: "context",
+          content,
+          source: "user",
+          active: true,
+        },
+      });
+
+      return { ok: true };
     }),
 });

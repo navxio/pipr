@@ -58,3 +58,8 @@ export const PlannerOutputSchema = z.object({
 export type TaskProposal = z.infer<typeof TaskProposalSchema>;
 
 export type PlannerOutput = z.infer<typeof PlannerOutputSchema>;
+
+export const IngestContextSchema = z.object({
+  projectId: z.string(),
+  content: z.string().min(1),
+});
