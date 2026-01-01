@@ -51,4 +51,39 @@ export const projectRouter = t.router({
 
       return { ok: true };
     }),
+
+  /**
+   * Returns the canonical project for this pipr instance.
+   *
+   * v0.1.0 semantics:
+   * - Exactly one project exists
+   * - Created automatically if missing
+   * - All planning signals attach to this project
+   */
+  bootstrap: t.procedure.query(async ({ ctx }) => {
+    const { prisma } = ctx;
+
+    let project = await prisma.project.findFirst();
+
+    if (!project) {
+      project = await prisma.project.create({
+        data: {
+          name: "default",
+        },
+      });
+    }
+
+    const hasContext = await prisma.planningSignal.findFirst({
+      where: {
+        projectId: project.id,
+        type: "context",
+        active: true,
+      },
+    });
+
+    return {
+      projectId: project.id,
+      hasContext: Boolean(hasContext),
+    };
+  }),
 });
