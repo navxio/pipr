@@ -59,7 +59,10 @@ export type TaskProposal = z.infer<typeof TaskProposalSchema>;
 
 export type PlannerOutput = z.infer<typeof PlannerOutputSchema>;
 
-export const IngestContextSchema = z.object({
+// no accepted_work/decision here because they're system emitted
+export const UpsertPlanningSignalSchema = z.object({
   projectId: z.string(),
+  type: z.enum(["context", "non_goal", "desired_outcome"]),
   content: z.string().min(1),
+  source: z.enum(["user", "system"]),
 });

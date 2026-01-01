@@ -2,12 +2,13 @@ import {
   PlanInputSchema,
   AcceptProposalsInputSchema,
   type PlanInput,
-  IngestContextSchema,
+  UpsertPlanningSignalSchema,
 } from "@pipr/shared";
 import { runPlannerLLM } from "../../agents/planner.js";
 
 import { initTRPC } from "@trpc/server";
 import type { Context } from "../context.js";
+import { assembleProjectContext } from "../../context/assembleProjectContext.js";
 
 import { GitHubAdapter } from "../../adapters/github.js";
 import { buildIssueBody } from "../../adapters/githubTemplates.js";
@@ -35,10 +36,40 @@ function normalizeTaskProposal(p: any) {
 }
 
 export const plannerRouter = t.router({
+  /**
+   * Initiates a new planning run and generates task proposals.
+   *
+   * This procedure represents the start of a planning session.
+   *
+   * Responsibilities:
+   * - Create an AgentRun to record planning intent
+   * - Assemble authoritative project planning context
+   * - Invoke the planner LLM to generate task proposals
+   * - Persist planner output for human review
+   *
+   * IMPORTANT SEMANTICS:
+   *
+   * - This endpoint performs NO execution side effects.
+   * - No tasks are created and no external systems are modified.
+   * - All generated proposals are tentative until explicitly accepted.
+   *
+   * Planning context is assembled from persistent planning signals
+   * (context, constraints, accepted work, decisions) and treated as
+   * authoritative by the planner.
+   *
+   * This procedure does NOT:
+   * - Rank or filter proposals
+   * - Learn from past runs
+   * - Infer completed work
+   * - Modify planning signals
+   *
+   * Those responsibilities are handled at acceptance time.
+   */
   plan: t.procedure.input(PlanInputSchema).mutation(async ({ input, ctx }) => {
     const { prisma } = ctx;
+    const { projectId, goal } = input;
 
-    // 1. Create AgentRun (thinking starts here)
+    // 1️⃣ Create AgentRun (planning session)
     const run = await prisma.agentRun.create({
       data: {
         agentName: "planner-v1",
@@ -46,20 +77,28 @@ export const plannerRouter = t.router({
       },
     });
 
-    // 2. Run planner agent via Ollama
-    const { tasks, rawResponse } = await runPlannerLLM(input.goal);
+    // 2️⃣ Assemble authoritative project planning context
+    const projectContext = await assembleProjectContext(projectId);
 
-    // 3. Persist reasoning + output
-    //TODO: add these to a transaction
+    // 3️⃣ Run planner LLM
+    const { tasks, rawResponse } = await runPlannerLLM(
+      projectId,
+      goal,
+      projectContext,
+    );
+
+    // 4️⃣ Persist planner output
+    // NOTE: This is intentionally not wrapped in a transaction for v0.1.0
     await prisma.agentRun.update({
       where: { id: run.id },
       data: {
         outputJson: { tasks },
-        rawOutput: rawResponse, // if you have this column
+        rawOutput: rawResponse,
         completedAt: new Date(),
       },
     });
 
+    // 5️⃣ Persist task proposals for human review
     const proposals = await Promise.all(
       tasks.map((t) =>
         prisma.taskProposal.create({
@@ -75,11 +114,9 @@ export const plannerRouter = t.router({
       ),
     );
 
-    const normalizedProposals = proposals.map(normalizeTaskProposal);
-
     return {
       agentRunId: run.id,
-      proposals: normalizedProposals,
+      proposals: proposals.map(normalizeTaskProposal),
     };
   }),
 
@@ -233,34 +270,45 @@ export const plannerRouter = t.router({
     }),
 
   /**
-   * Ingests or updates authoritative project context.
+   * Creates or updates a planning signal for a project.
    *
-   * This endpoint creates or replaces the active CONTEXT
-   * planning signal for a project.
+   * This is the canonical entry point for mutating planning knowledge.
+   *
+   * Lifecycle semantics:
+   * - CONTEXT: only one active at a time (replace-on-write)
+   * - NON_GOAL / DESIRED_OUTCOME: append-only, active by default
+   * - ACCEPTED_WORK / COMPLETED_WORK / DECISION: system-emitted only
+   *
+   * This endpoint is used by:
+   * - Onboarding flow
+   * - Context edits from the UI
+   * - Future tooling and automation
    */
-  ingestContext: t.procedure
-    .input(IngestContextSchema)
+  upsertPlanningSignal: t.procedure
+    .input(UpsertPlanningSignalSchema)
     .mutation(async ({ input, ctx }) => {
       const { prisma } = ctx;
-      const { projectId, content } = input;
+      const { projectId, type, content, source } = input;
 
-      // Deactivate existing context signals
-      await prisma.planningSignal.updateMany({
-        where: {
-          projectId,
-          type: "context",
-          active: true,
-        },
-        data: { active: false },
-      });
+      // Enforce lifecycle rules
+      if (type === "context") {
+        // Only one active context at a time
+        await prisma.planningSignal.updateMany({
+          where: {
+            projectId,
+            type: "context",
+            active: true,
+          },
+          data: { active: false },
+        });
+      }
 
-      // Create new authoritative context
       await prisma.planningSignal.create({
         data: {
           projectId,
-          type: "context",
+          type,
           content,
-          source: "user",
+          source,
           active: true,
         },
       });
