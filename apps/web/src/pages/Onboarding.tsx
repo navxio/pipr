@@ -1,24 +1,51 @@
-// apps/web/src/pages/Onboarding.tsx
+/// apps/web/src/pages/Onboarding.tsx
 import { useState } from "react";
 import { trpc } from "../trpc";
 
-export default function Onboarding({ onComplete }: { onComplete: () => void }) {
+export default function Onboarding({
+  projectId,
+  onComplete,
+}: {
+  projectId: string;
+  onComplete: () => void;
+}) {
   const [context, setContext] = useState("");
   const [nonGoals, setNonGoals] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const upsertSignal = trpc.project.upsertPlanningSignal;
 
   const handleSubmit = async () => {
     if (!context.trim()) return;
 
     setLoading(true);
     try {
-      await trpc.project.initialize.mutate({
-        context: context.trim(),
-        nonGoals: nonGoals.trim() || undefined,
+      // 1️⃣ Authoritative project context
+      await upsertSignal.mutate({
+        projectId,
+        type: "context",
+        content: context.trim(),
+        source: "user",
       });
+
+      // 2️⃣ Optional non-goals (one per line)
+      const lines = nonGoals
+        .split("\n")
+        .map((l) => l.trim())
+        .filter(Boolean);
+
+      for (const line of lines) {
+        await upsertSignal.mutate({
+          projectId,
+          type: "non_goal",
+          content: line,
+          source: "user",
+        });
+      }
 
       onComplete();
     } catch (err) {
+      console.error(err);
       alert(String(err));
     } finally {
       setLoading(false);
@@ -38,66 +65,52 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
       <div style={{ maxWidth: 720, width: "100%" }}>
         <h1 style={{ marginBottom: 8 }}>Welcome to pipr</h1>
         <p style={{ marginBottom: 32, color: "#555" }}>
-          Before pipr can help you plan, it needs a clear understanding of your
-          project as it exists today.
+          Before pipr can help you plan, it needs authoritative context about
+          your project.
         </p>
 
         <section style={{ marginBottom: 32 }}>
-          <h2 style={{ marginBottom: 8 }}>Project context</h2>
-          <p style={{ marginBottom: 8, color: "#666", fontSize: 14 }}>
-            Describe your project’s current state. This will be treated as
-            authoritative planning context.
+          <h2>Project context</h2>
+          <p style={{ fontSize: 14, color: "#666" }}>
+            Describe your project as it exists today. This will be treated as
+            factual planning context.
           </p>
 
           <textarea
+            rows={10}
+            value={context}
+            onChange={(e) => setContext(e.target.value)}
             placeholder={`Example:
 
 pipr is an experimental planning tool for solo developers.
 It generates task proposals from goals using an LLM.
 Accepted proposals are synced one-way to GitHub Issues.
-Execution state is not tracked inside pipr.
-`}
-            value={context}
-            onChange={(e) => setContext(e.target.value)}
-            rows={10}
-            style={{
-              width: "100%",
-              padding: 12,
-              fontSize: 14,
-              lineHeight: 1.5,
-            }}
+Execution state is not tracked internally.`}
+            style={{ width: "100%", padding: 12 }}
           />
         </section>
 
         <section style={{ marginBottom: 32 }}>
-          <h2 style={{ marginBottom: 8 }}>Explicit non-goals (optional)</h2>
-          <p style={{ marginBottom: 8, color: "#666", fontSize: 14 }}>
-            List things you explicitly do <em>not</em> want pipr to plan for.
-            One per line.
+          <h2>Explicit non-goals (optional)</h2>
+          <p style={{ fontSize: 14, color: "#666" }}>
+            List things pipr should not propose. One per line.
           </p>
 
           <textarea
-            placeholder={`Examples:
-- No mobile app
-- No optimization work yet
-- No automation or learning behavior`}
+            rows={4}
             value={nonGoals}
             onChange={(e) => setNonGoals(e.target.value)}
-            rows={4}
-            style={{
-              width: "100%",
-              padding: 12,
-              fontSize: 14,
-              lineHeight: 1.5,
-            }}
+            placeholder={`Examples:
+No mobile app
+No optimization yet
+No automation or learning behavior`}
+            style={{ width: "100%", padding: 12 }}
           />
         </section>
 
-        <div style={{ display: "flex", gap: 12 }}>
-          <button onClick={handleSubmit} disabled={loading || !context.trim()}>
-            {loading ? "Saving…" : "Start planning"}
-          </button>
-        </div>
+        <button onClick={handleSubmit} disabled={!context.trim() || loading}>
+          {loading ? "Saving…" : "Start planning"}
+        </button>
       </div>
     </div>
   );
