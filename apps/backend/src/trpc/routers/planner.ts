@@ -7,7 +7,7 @@ import { runPlannerLLM } from "../../agents/planner.js";
 
 import { initTRPC } from "@trpc/server";
 import type { Context } from "../context.js";
-import { assembleProjectContext } from "../../context/assembleProjectContext.js";
+import { assembleProjectContext } from "../../helper/assembleProjectContext.js";
 
 import { GitHubAdapter } from "../../adapters/github.js";
 import { buildIssueBody } from "../../adapters/githubTemplates.js";
