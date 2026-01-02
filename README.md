@@ -86,6 +86,20 @@ The planning model is intentionally minimal and extensible.
 
 Expect breaking changes.
 
+## Planned Features
+
+- [ ] **Context retrieval at scale (RAG)**
+  - Semantic retrieval over accumulated planning signals
+  - Used only when context size exceeds what fits in a single planning frame
+
+- [ ] **Additional planning signals**
+  - Strategic intent (longer-term direction that outlives individual goals)
+  - Explicit provenance signals (why a signal exists, not just what it says)
+
+- [ ] **Completed work inference**
+  - Populate `completed_work` signals from external execution systems
+    (e.g. GitHub issue closure)
+
 ---
 
 ## License
