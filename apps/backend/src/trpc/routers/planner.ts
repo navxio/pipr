@@ -67,7 +67,9 @@ export const plannerRouter = t.router({
   plan: t.procedure.input(PlanInputSchema).mutation(async ({ input, ctx }) => {
     const { prisma } = ctx;
     const { projectId, goal } = input;
-
+    if (!projectId) {
+      throw new Error("Invariant violation: plan() requires a projectId");
+    }
     // 1️⃣ Create AgentRun (planning session)
     const run = await prisma.agentRun.create({
       data: {
@@ -77,10 +79,7 @@ export const plannerRouter = t.router({
     });
 
     // 2️⃣ Assemble authoritative project planning context
-    const projectContext = await assembleProjectContext(
-      prisma,
-      projectId as string,
-    );
+    const projectContext = await assembleProjectContext(prisma, projectId);
 
     // 3️⃣ Run planner LLM
     const { tasks, rawResponse } = await runPlannerLLM(

@@ -7,7 +7,14 @@ import type { TaskProposal } from "@pipr/shared";
 
 /* ---------- Main Page ---------- */
 
-export default function PlannerPage() {
+type PlannerPageProps = {
+  projectId: string;
+};
+export default function PlannerPage<PlannerPageProps>({
+  projectId,
+}: {
+  projectId: string;
+}) {
   const [goal, setGoal] = useState("");
   const [agentRunId, setAgentRunId] = useState<string | null>(null);
   const [proposals, setProposals] = useState<TaskProposal[]>([]);
@@ -18,7 +25,7 @@ export default function PlannerPage() {
   const handlePlan = async () => {
     setLoading(true);
     try {
-      const result = await trpc.planner.plan.mutate({ goal });
+      const result = await trpc.planner.plan.mutate({ projectId, goal });
       setAgentRunId(result.agentRunId);
       setProposals(result.proposals);
       setSelectedIds(new Set());

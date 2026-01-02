@@ -10,6 +10,7 @@ export default function App() {
 
   useEffect(() => {
     trpc.project.bootstrap.query().then((res) => {
+      console.log("Setting project id: ", res.projectId);
       setProjectId(res.projectId);
       setHasContext(res.hasContext);
     });
