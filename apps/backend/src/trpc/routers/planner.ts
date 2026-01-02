@@ -77,7 +77,10 @@ export const plannerRouter = t.router({
     });
 
     // 2️⃣ Assemble authoritative project planning context
-    const projectContext = await assembleProjectContext(projectId);
+    const projectContext = await assembleProjectContext(
+      prisma,
+      projectId as string,
+    );
 
     // 3️⃣ Run planner LLM
     const { tasks, rawResponse } = await runPlannerLLM(
@@ -220,6 +223,13 @@ export const plannerRouter = t.router({
 
       const agentInput = agentRun.inputJson as PlanInput;
 
+      if (!agentInput.projectId) {
+        throw new Error(
+          "Invariant violation: cannot emit planning signals with projectId",
+        );
+      }
+
+      const projectId: string = agentInput.projectId;
       // 7️⃣ Push accepted proposals to GitHub Issues
       for (const proposal of normalizedAccepted) {
         const issue = await github.createIssue({
@@ -240,7 +250,7 @@ export const plannerRouter = t.router({
         // 8️⃣ Emit accepted_work planning signal
         await prisma.planningSignal.create({
           data: {
-            projectId: agentInput.projectId,
+            projectId,
             type: "accepted_work",
             content: proposal.title,
             source: "system",
@@ -253,7 +263,7 @@ export const plannerRouter = t.router({
       if (note?.trim()) {
         await prisma.planningSignal.create({
           data: {
-            projectId: agentInput.projectId,
+            projectId,
             type: "decision",
             content: note.trim(),
             source: "user",
