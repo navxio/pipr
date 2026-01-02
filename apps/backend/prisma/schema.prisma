@@ -75,6 +75,22 @@ model DecisionNote {
   agentRun AgentRun @relation(fields: [agentRunId], references: [id])
 }
 
+/// PlanningSignal represents persistent planning state that shapes future reasoning.
+///
+/// IMPORTANT:
+/// - Not all PlanningSignalTypes are persisted in v0.1.0.
+/// - `goal` and `desired_outcome` are session-scoped signals:
+///   they are inputs to a planning run but MUST NOT be persisted
+///   as PlanningSignal rows.
+/// - Persistent signals include:
+///   - context
+///   - non_goal
+///   - accepted_work
+///   - completed_work (future)
+///   - decision
+///
+/// This distinction is enforced at the application layer.
+
 enum PlanningSignalType {
   goal
   context

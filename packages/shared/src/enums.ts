@@ -4,6 +4,9 @@ export enum TaskProposalStatus {
   rejected = "rejected",
 }
 
+// NOTE:
+// `goal` and `desired_outcome` are session-scoped planning signals.
+// They are inputs to planning runs but are NOT persisted as planningSignal rows.
 export enum PlanningSignalType {
   context = "context",
   non_goal = "non_goal",
