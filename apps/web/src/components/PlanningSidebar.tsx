@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { trpc } from "../trpc";
 function SignalSection({
   title,
@@ -41,8 +42,42 @@ function SignalSection({
   );
 }
 
+type PlanningSignal = {
+  id: string;
+  type: string;
+  content: string;
+};
+
 export function PlanningSidebar() {
-  const { data, isLoading } = trpc.project.getPlanningSignals.useQuery();
+  const [signals, setSignals] = useState<PlanningSignal[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const result = await trpc.project.getPlanningSignals.query();
+        if (!cancelled) {
+          setSignals(result);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(String(err));
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <div
@@ -56,28 +91,31 @@ export function PlanningSidebar() {
     >
       <h3 style={{ marginTop: 0 }}>What pipr knows</h3>
 
-      {isLoading && <div style={{ fontSize: 12 }}>Loading…</div>}
+      {loading && <div style={{ fontSize: 12 }}>Loading…</div>}
+      {error && (
+        <div style={{ fontSize: 12, color: "red" }}>Failed to load context</div>
+      )}
 
-      {!isLoading && data && (
+      {!loading && !error && (
         <>
           <SignalSection
             title="Context"
-            signals={data.filter((s) => s.type === "context")}
+            signals={signals.filter((s) => s.type === "context")}
           />
 
           <SignalSection
             title="Non-goals"
-            signals={data.filter((s) => s.type === "non_goal")}
+            signals={signals.filter((s) => s.type === "non_goal")}
           />
 
           <SignalSection
             title="Accepted work"
-            signals={data.filter((s) => s.type === "accepted_work")}
+            signals={signals.filter((s) => s.type === "accepted_work")}
           />
 
           <SignalSection
             title="Decisions"
-            signals={data.filter((s) => s.type === "decision")}
+            signals={signals.filter((s) => s.type === "decision")}
           />
         </>
       )}
