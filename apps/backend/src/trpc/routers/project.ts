@@ -86,4 +86,50 @@ export const projectRouter = t.router({
       hasContext: Boolean(hasContext),
     };
   }),
+
+  /**
+   * Returns the active planning signals for the current project.
+   *
+   * This endpoint is used to power the "What pipr knows" sidebar.
+   *
+   * SEMANTICS:
+   * - Only active planning signals are returned
+   * - Signals are ordered by creation time (oldest → newest)
+   * - No inference, aggregation, or filtering is performed
+   *
+   * IMPORTANT:
+   * - This endpoint does NOT assemble planning context for the planner
+   * - It is strictly for inspection and transparency
+   *
+   * Planning context assembly is handled separately by
+   * `assembleProjectContext` during planning runs.
+   */
+  getPlanningSignals: t.procedure.query(async ({ ctx }) => {
+    const { prisma } = ctx;
+
+    // v0.1.0: exactly one project exists
+    const project = await prisma.project.findFirst();
+
+    if (!project) {
+      return [];
+    }
+
+    const signals = await prisma.planningSignal.findMany({
+      where: {
+        projectId: project.id,
+        active: true,
+      },
+      orderBy: {
+        createdAt: "asc",
+      },
+    });
+
+    return signals.map((s) => ({
+      id: s.id,
+      type: s.type,
+      content: s.content,
+      source: s.source,
+      createdAt: s.createdAt,
+    }));
+  }),
 });
