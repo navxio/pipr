@@ -41,16 +41,16 @@ enum TaskProposalStatus {
 }
 
 model TaskProposal {
-  id          String   @id @default(cuid())
+  id          String             @id @default(cuid())
   agentRunId  String
   title       String
   description String?
   estimate    Int?
   provenance  String[]
-  status      String // "proposed" || "accepted" || "rejected"
+  status      TaskProposalStatus
   externalRef String? // Github issue url
-  createdAt   DateTime @default(now())
-  agentRun    AgentRun @relation(fields: [agentRunId], references: [id])
+  createdAt   DateTime           @default(now())
+  agentRun    AgentRun           @relation(fields: [agentRunId], references: [id])
 }
 
 model AgentRun {
@@ -97,7 +97,7 @@ enum PlanningSignalType {
   non_goal
   desired_outcome
   accepted_work
-  completed_work
+  completed_work // for > v0.1.0
   decision
 }
 
