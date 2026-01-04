@@ -4,6 +4,9 @@
 
 pipr is an experimental, open-source planning companion for solo founders and small development teams.
 
+<img width="1818" height="1712" alt="CleanShot 2026-01-04 at 16 43 39@2x" src="https://github.com/user-attachments/assets/e08bd806-7384-490b-955a-554259976757" />
+
+
 It helps turn **current intent** into **concrete, explainable execution plans** by grounding LLM-based planning in **explicit project context and accumulated decisions**.
 
 pipr is **not** a task tracker or project management system.  
